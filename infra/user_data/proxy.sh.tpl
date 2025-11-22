@@ -12,13 +12,15 @@ mkdir -p /opt/proxy
 # Create config.py for constants
 cat > /opt/proxy/config.py <<EOF
 MANAGER_IP = "${manager_ip}"
-WORKER_IPS = [${worker_ips}]
+WORKER_IPS = [${join(", ", [for ip in worker_ips : "\"${ip}\""])}]
 MYSQL_PASSWORD = "${mysql_password}"
 EOF
+
+
 
 
 # Download and run proxy.py
 wget https://raw.githubusercontent.com/DanielNicula/FA/main/proxy/proxy.py -O /opt/proxy/proxy.py
 
 cd /opt/proxy
-sudo bash -c 'nohup python3 proxy.py > /var/log/proxy.log 2>&1 &'
+sudo bash -c 'nohup python3 proxy.py > proxy.log 2>&1 &'

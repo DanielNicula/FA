@@ -181,7 +181,7 @@ resource "aws_instance" "proxy" {
 
   user_data = templatefile("${path.module}/user_data/proxy.sh.tpl", {
     manager_ip = aws_instance.mysql_manager.private_ip,
-    worker_ips = join(",", aws_instance.mysql_worker[*].private_ip),
+    worker_ips = aws_instance.mysql_worker[*].private_ip,
     mysql_password = var.mysql_password
   })
 
