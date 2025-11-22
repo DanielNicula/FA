@@ -3,13 +3,10 @@ import random
 from flask import Flask, request, jsonify
 import mysql.connector
 import os
-from config import MANAGER_IP, WORKER_IPS, MYSQL_PASSWORD
+from config import MANAGER_IP, WORKER_IP_1, WORKER_IP_2, MYSQL_PASSWORD
 
 app = Flask(__name__)
 
-MANAGER_IP = os.getenv("MANAGER_IP")
-WORKER_IPS = os.getenv("WORKER_IPS", "").split()
-MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD")
 
 LATENCY_THRESHOLD = 0.03   # 30ms threshold, we do chose a random worker below this latency and the lowest ping worker if above
 
@@ -82,4 +79,5 @@ def handle_query():
         return jsonify({"error": str(e)}), 500
     
 if __name__ == "__main__":
+    WORKER_IPS = [WORKER_IP_1, WORKER_IP_2]
     app.run(host="0.0.0.0", port=80)
