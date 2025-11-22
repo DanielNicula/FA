@@ -18,7 +18,7 @@ EOF
 
 
 # Download and run proxy.py
-wget https://raw.githubusercontent.com/DanielNicula/FinalProject/main/proxy/proxy.py -O /opt/proxy/proxy.py
+wget https://raw.githubusercontent.com/DanielNicula/FA/main/proxy/proxy.py -O /opt/proxy/proxy.py
 
 cd /opt/proxy
 sudo bash -c 'nohup python3 proxy.py > /var/log/proxy.log 2>&1 &'
