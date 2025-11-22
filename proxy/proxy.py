@@ -3,7 +3,7 @@ import random
 from flask import Flask, request, jsonify
 import mysql.connector
 import os
-from config import MANAGER_IP, WORKER_IP_1, WORKER_IP_2, MYSQL_PASSWORD
+from config import MANAGER_IP, WORKER_IPS, MYSQL_PASSWORD
 
 app = Flask(__name__)
 
@@ -79,5 +79,4 @@ def handle_query():
         return jsonify({"error": str(e)}), 500
     
 if __name__ == "__main__":
-    WORKER_IPS = [WORKER_IP_1, WORKER_IP_2]
     app.run(host="0.0.0.0", port=80)
