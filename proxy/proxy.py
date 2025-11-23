@@ -15,7 +15,6 @@ app.logger.setLevel(logging.DEBUG)         # Set the log level to debug
 LATENCY_THRESHOLD = 0.03   # 30ms threshold, we do chose a random worker below this latency and the lowest ping worker if above
 
 def connect(host):
-    app.logger.info(f"[CONNECT] Attempting connection to {host}")
     try:
         conn = mysql.connector.connect(
             host=host,
@@ -25,7 +24,6 @@ def connect(host):
             autocommit=True,
             connection_timeout=2
         )
-        app.logger.info(f"[CONNECT] Connected to {host}")
         return conn
     except Exception as e:
         app.logger.info(f"[CONNECT] Failed to connect to {host}: {e}")
@@ -33,7 +31,6 @@ def connect(host):
 
 def measure_latency(host):
     try:
-        app.logger.info(f"[LATENCY] Measuring latency to {host}")
         start = time.time()
         db = connect(host)
         cursor = db.cursor()
@@ -41,7 +38,6 @@ def measure_latency(host):
         cursor.fetchone()
         db.close()
         latency = time.time() - start
-        app.logger.info(f"[LATENCY] {host} -> {latency:.4f}s")
         return latency
     except Exception:
         app.logger.info(f"[LATENCY] {host} measurement failed, returning high latency")
@@ -53,18 +49,15 @@ def is_cluster_under_load(latencies):
 
 def select_worker():
     latencies = {ip: measure_latency(ip) for ip in WORKER_IPS}
-    app.logger.info(f"[SELECT] Latencies: {latencies}")
     under_load = is_cluster_under_load(latencies)
-    app.logger.info(f"[SELECT] Cluster under load: {under_load}")
     if not under_load:
         # Random Forwarding
         choice = random.choice(WORKER_IPS)
-        app.logger.info(f"[SELECT] Not under load -> random choice: {choice}")
+
         return choice
 
     # Customized Forwarding
     best = min(latencies, key=latencies.get)
-    app.logger.info(f"[SELECT] Under load -> chosen best: {best}")
     return best
 
 def is_read_query(sql):
@@ -75,13 +68,9 @@ def is_read_query(sql):
 @app.route("/query", methods=["POST"])
 def handle_query():
     app.logger.info("[REQUEST] Received /query request")
-    app.logger.info(f"[REQUEST] Query: {request.get_data(as_text=True)}")
     data = request.get_json()
-    app.logger.info(f"[REQUEST] Parsed JSON data: {data}")
-    app.logger.info(f"[REQUEST] Received data: {data}")
     if not data or "sql" not in data:
         return jsonify({"error": "Missing 'sql' field"}), 400
-
     sql = data["sql"]
 
     try:
@@ -101,7 +90,7 @@ def handle_query():
         if is_read_query(sql):
             return jsonify(cursor.fetchall())
 
-        return jsonify({"status": "success"})
+        return jsonify({"status": "success", "host": host})
 
     except Exception as e:
         app.logger.info(f"[ERROR] Exception while handling query: {e}")

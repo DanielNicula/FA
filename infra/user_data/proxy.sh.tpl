@@ -23,4 +23,4 @@ EOF
 wget https://raw.githubusercontent.com/DanielNicula/FA/main/proxy/proxy.py -O /opt/proxy/proxy.py
 
 cd /opt/proxy
-sudo bash -c 'nohup python3 proxy.py > proxy.log 2>&1 &'
+sudo bash -c 'nohup python3 -u proxy.py > proxy.log 2>&1 &'

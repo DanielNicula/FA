@@ -161,7 +161,8 @@ resource "aws_instance" "mysql_worker" {
 
   user_data = templatefile("${path.module}/user_data/mysql_worker.sh.tpl", {
     mysql_password = var.mysql_password
-    manager_ip     = aws_instance.mysql_manager.public_ip
+    manager_ip = aws_instance.mysql_manager.public_ip
+    server_id = count.index + 2
   })
 
   tags = {
