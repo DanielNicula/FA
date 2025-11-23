@@ -72,7 +72,7 @@ def is_read_query(sql):
 
 @app.route("/query", methods=["POST"])
 def handle_query():
-    app.logger.info("[REQUEST] Received /query request")
+    print("[REQUEST] Received /query request", flush=True)
     app.logger.info(f"[REQUEST] Query: {request.get_data(as_text=True)}")
     data = request.get_json()
     app.logger.info(f"[REQUEST] Received data: {data}")
