@@ -80,16 +80,18 @@ def handle_query():
 
     sql = data["sql"]
 
-    try:
-        # We select to which MySql Instance to forward the query
-        print(f"[REQUEST] Received SQL: {sql[:200]!r}")
-        if is_read_query(sql):
-            host = select_worker()
-        else:
-            # Direct Hit
-            host = MANAGER_IP
-        print(f"[REQUEST] Forwarding to host: {host}")
+    # try:
+    #     # We select to which MySql Instance to forward the query
+    #     print(f"[REQUEST] Received SQL: {sql[:200]!r}")
+    #     if is_read_query(sql):
+    #         host = select_worker()
+    #     else:
+    #         # Direct Hit
+    #         host = MANAGER_IP
+    #     print(f"[REQUEST] Forwarding to host: {host}")
 
+    try:
+        host = MANAGER_IP
         db = connect(host)
         cursor = db.cursor(dictionary=True)
         cursor.execute(sql)
