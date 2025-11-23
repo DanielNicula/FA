@@ -54,11 +54,10 @@ def is_cluster_under_load(latencies):
 def select_worker():
     latencies = {ip: measure_latency(ip) for ip in WORKER_IPS}
     app.logger.info(f"[SELECT] Latencies: {latencies}")
-
-    # Random Forwarding
     under_load = is_cluster_under_load(latencies)
     app.logger.info(f"[SELECT] Cluster under load: {under_load}")
     if not under_load:
+        # Random Forwarding
         choice = random.choice(WORKER_IPS)
         app.logger.info(f"[SELECT] Not under load -> random choice: {choice}")
         return choice
@@ -75,27 +74,26 @@ def is_read_query(sql):
 
 @app.route("/query", methods=["POST"])
 def handle_query():
-    print("[REQUEST] Received /query request", flush=True)
+    app.logger.info("[REQUEST] Received /query request", flush=True)
     app.logger.info(f"[REQUEST] Query: {request.get_data(as_text=True)}")
     data = request.get_json()
+    app.logger.info(f"[REQUEST] Parsed JSON data: {data}")
     app.logger.info(f"[REQUEST] Received data: {data}")
     if not data or "sql" not in data:
         return jsonify({"error": "Missing 'sql' field"}), 400
 
     sql = data["sql"]
 
-    # try:
-    #     # We select to which MySql Instance to forward the query
-    #     print(f"[REQUEST] Received SQL: {sql[:200]!r}")
-    #     if is_read_query(sql):
-    #         host = select_worker()
-    #     else:
-    #         # Direct Hit
-    #         host = MANAGER_IP
-    #     print(f"[REQUEST] Forwarding to host: {host}")
-
     try:
-        host = MANAGER_IP
+        # We select to which MySql Instance to forward the query
+        app.logger.info(f"[REQUEST] Received SQL: {sql[:200]!r}")
+        if is_read_query(sql):
+            host = select_worker()
+        else:
+            # Direct Hit
+            host = MANAGER_IP
+        app.logger.info(f"[REQUEST] Forwarding to host: {host}")
+
         db = connect(host)
         cursor = db.cursor(dictionary=True)
         cursor.execute(sql)
