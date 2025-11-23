@@ -12,7 +12,7 @@ app = Flask(__name__)
 LATENCY_THRESHOLD = 0.03   # 30ms threshold, we do chose a random worker below this latency and the lowest ping worker if above
 
 def connect(host):
-    print(f"[CONNECT] Attempting connection to {host}")
+    app.logger.info(f"[CONNECT] Attempting connection to {host}")
     try:
         conn = mysql.connector.connect(
             host=host,
@@ -22,15 +22,15 @@ def connect(host):
             autocommit=True,
             connection_timeout=2
         )
-        print(f"[CONNECT] Connected to {host}")
+        app.logger.info(f"[CONNECT] Connected to {host}")
         return conn
     except Exception as e:
-        print(f"[CONNECT] Failed to connect to {host}: {e}")
+        app.logger.info(f"[CONNECT] Failed to connect to {host}: {e}")
         raise
 
 def measure_latency(host):
     try:
-        print(f"[LATENCY] Measuring latency to {host}")
+        app.logger.info(f"[LATENCY] Measuring latency to {host}")
         start = time.time()
         db = connect(host)
         cursor = db.cursor()
@@ -38,10 +38,10 @@ def measure_latency(host):
         cursor.fetchone()
         db.close()
         latency = time.time() - start
-        print(f"[LATENCY] {host} -> {latency:.4f}s")
+        app.logger.info(f"[LATENCY] {host} -> {latency:.4f}s")
         return latency
     except Exception:
-        print(f"[LATENCY] {host} measurement failed, returning high latency")
+        app.logger.info(f"[LATENCY] {host} measurement failed, returning high latency")
         return 9999
 
 def is_cluster_under_load(latencies):
@@ -50,31 +50,32 @@ def is_cluster_under_load(latencies):
 
 def select_worker():
     latencies = {ip: measure_latency(ip) for ip in WORKER_IPS}
-    print(f"[SELECT] Latencies: {latencies}")
+    app.logger.info(f"[SELECT] Latencies: {latencies}")
 
     # Random Forwarding
     under_load = is_cluster_under_load(latencies)
-    print(f"[SELECT] Cluster under load: {under_load}")
+    app.logger.info(f"[SELECT] Cluster under load: {under_load}")
     if not under_load:
         choice = random.choice(WORKER_IPS)
-        print(f"[SELECT] Not under load -> random choice: {choice}")
+        app.logger.info(f"[SELECT] Not under load -> random choice: {choice}")
         return choice
 
     # Customized Forwarding
     best = min(latencies, key=latencies.get)
-    print(f"[SELECT] Under load -> chosen best: {best}")
+    app.logger.info(f"[SELECT] Under load -> chosen best: {best}")
     return best
 
 def is_read_query(sql):
     is_read = sql.strip().lower().startswith("select")
-    print(f"[QUERY] is_read_query: {is_read} for sql: {sql[:80]!r}")
+    app.logger.info(f"[QUERY] is_read_query: {is_read} for sql: {sql[:80]!r}")
     return is_read
 
 @app.route("/query", methods=["POST"])
 def handle_query():
-    print("[REQUEST] Received /query request")
+    app.logger.info("[REQUEST] Received /query request")
+    app.logger.info(f"[REQUEST] Query: {request.get_data(as_text=True)}")
     data = request.get_json()
-    print(f"[REQUEST] Received data: {data}")
+    app.logger.info(f"[REQUEST] Received data: {data}")
     if not data or "sql" not in data:
         return jsonify({"error": "Missing 'sql' field"}), 400
 
@@ -102,7 +103,7 @@ def handle_query():
         return jsonify({"status": "success"})
 
     except Exception as e:
-        print(f"[ERROR] Exception while handling query: {e}")
+        app.logger.info(f"[ERROR] Exception while handling query: {e}")
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
     
