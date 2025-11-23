@@ -72,8 +72,9 @@ def is_read_query(sql):
 
 @app.route("/query", methods=["POST"])
 def handle_query():
+    print("[REQUEST] Received /query request")
     data = request.get_json()
-
+    print(f"[REQUEST] Received data: {data}")
     if not data or "sql" not in data:
         return jsonify({"error": "Missing 'sql' field"}), 400
 
