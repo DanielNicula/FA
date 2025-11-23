@@ -1,3 +1,4 @@
+import logging
 import time
 import random
 from flask import Flask, request, jsonify
@@ -7,7 +8,9 @@ from config import MANAGER_IP, WORKER_IPS, MYSQL_PASSWORD
 import traceback
 
 app = Flask(__name__)
-
+handler = logging.FileHandler("proxy.log")  # Create the file logger
+app.logger.addHandler(handler)             # Add it to the built-in logger
+app.logger.setLevel(logging.DEBUG)         # Set the log level to debug
 
 LATENCY_THRESHOLD = 0.03   # 30ms threshold, we do chose a random worker below this latency and the lowest ping worker if above
 
