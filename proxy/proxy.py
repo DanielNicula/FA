@@ -47,6 +47,7 @@ def measure_latency(host):
         latency = time.time() - start
         return latency
     except Exception:
+        app.logger.info(f"[LATENCY] {host} measurement failed, returning high latency")
         return 9999
 
 def is_cluster_under_load(latencies):
@@ -68,6 +69,7 @@ def select_worker():
 
 def is_read_query(sql):
     is_read = sql.strip().lower().startswith("select")
+    app.logger.info(f"[QUERY] is_read_query: {is_read} for sql: {sql[:80]!r}")
     return is_read
 
 @app.route("/query", methods=["POST"])
@@ -80,6 +82,7 @@ def handle_query():
 
     try:
         # We select to which MySql Instance to forward the query
+        app.logger.info(f"[REQUEST] Received SQL: {sql[:200]!r}")
         if is_read_query(sql):
             host = select_worker()
         else:
