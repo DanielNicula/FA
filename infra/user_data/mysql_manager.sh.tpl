@@ -36,7 +36,7 @@ EOF
 
 # Setting up replication for workers
 sudo mysql -u root -p"${mysql_password}" <<EOF
-CREATE USER IF NOT EXISTS 'repl'@'%' IDENTIFIED BY '${mysql_password}';
+CREATE USER IF NOT EXISTS 'repl'@'%' IDENTIFIED WITH mysql_native_password BY '${mysql_password}';
 GRANT REPLICATION SLAVE ON *.* TO 'repl'@'%';
 FLUSH PRIVILEGES;
 EOF

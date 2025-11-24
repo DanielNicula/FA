@@ -16,7 +16,6 @@ sudo mysql -u root -p"${mysql_password}" < sakila-db/sakila-data.sql
 # Let Proxy access MySQL remotely and activate GTID for replication
 sudo sed -i 's/^bind-address.*/bind-address = 0.0.0.0/' /etc/mysql/mysql.conf.d/mysqld.cnf
 sudo tee -a /etc/mysql/mysql.conf.d/mysqld.cnf > /dev/null <<EOF
-
 server-id = ${server_id}
 gtid_mode = ON
 enforce_gtid_consistency = ON
@@ -24,6 +23,7 @@ binlog_format = ROW
 relay_log = relay-bin
 read_only = ON
 EOF
+
 sudo systemctl restart mysql
 
 #Let Proxy access MySQL remotely
@@ -34,7 +34,6 @@ GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;
 EOF
 
 # Setting up replication
-    
 sudo mysql -u root -p"${mysql_password}" <<EOF
 ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '${mysql_password}';
 CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED BY '${mysql_password}';

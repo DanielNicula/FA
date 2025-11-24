@@ -24,10 +24,40 @@ data "aws_subnets" "default_public" {
   }
 }
 
-# Security groups for MySQL
-resource "aws_security_group" "mysql_sg" {
-  name        = "mysql-sg"
-  description = "Internal MySQL cluster traffic"
+# Security group for MySQL Manager
+resource "aws_security_group" "mysql_manager_sg" {
+  name        = "mysql-manager-sg"
+  description = "Security group for MySQL Manager"
+  vpc_id      = data.aws_vpc.default.id
+
+  ingress {
+    description = "SSH"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "MySQL"
+    from_port   = 3306
+    to_port     = 3306
+    protocol    = "tcp"
+    security_groups = [aws_security_group.proxy_sg.id, aws_security_group.mysql_worker_sg.id]
+  }
+
+  egress {
+    from_port = 0
+    to_port   = 0
+    protocol  = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+# Security group for MySQL Workers
+resource "aws_security_group" "mysql_worker_sg" {
+  name        = "mysql-worker-sg"
+  description = "Security group for MySQL Workers"
   vpc_id      = data.aws_vpc.default.id
 
   ingress {
@@ -136,7 +166,7 @@ resource "aws_instance" "mysql_manager" {
   ami                         = data.aws_ami.ubuntu.id
   instance_type               = "t2.micro"
   subnet_id                   = element(data.aws_subnets.default_public.ids, 0)
-  vpc_security_group_ids      = [aws_security_group.mysql_sg.id]
+  vpc_security_group_ids      = [aws_security_group.mysql_manager_sg.id]
   key_name                    = "LOG8415E"
   associate_public_ip_address = true
 
@@ -155,13 +185,13 @@ resource "aws_instance" "mysql_worker" {
   ami                         = data.aws_ami.ubuntu.id
   instance_type               = "t2.micro"
   subnet_id                   = element(data.aws_subnets.default_public.ids, count.index + 1)
-  vpc_security_group_ids      = [aws_security_group.mysql_sg.id]
+  vpc_security_group_ids      = [aws_security_group.mysql_worker_sg.id]
   key_name                    = "LOG8415E"
   associate_public_ip_address = true
 
   user_data = templatefile("${path.module}/user_data/mysql_worker.sh.tpl", {
     mysql_password = var.mysql_password
-    manager_ip = aws_instance.mysql_manager.public_ip
+    manager_ip = aws_instance.mysql_manager.private_ip
     server_id = count.index + 2
   })
 
