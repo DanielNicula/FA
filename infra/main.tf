@@ -144,6 +144,12 @@ resource "aws_security_group" "gatekeeper_sg" {
   }
 }
 
+#API Key for gatekeeper
+ressource "random_password" "api_key" {
+  length  = 40
+  special = false
+}
+
 # AMI
 data "aws_ami" "ubuntu" {
   most_recent = true
@@ -232,7 +238,8 @@ resource "aws_instance" "gatekeeper" {
   associate_public_ip_address = true
 
   user_data = templatefile("${path.module}/user_data/gatekeeper.sh.tpl", {
-    proxy_ip = aws_instance.proxy.private_ip
+    proxy_ip = aws_instance.proxy.private_ip,
+    api_key  = random_password.api_key.result
   })
 
   tags = {

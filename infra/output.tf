@@ -13,3 +13,7 @@ output "mysql_manager_private_ip" {
 output "mysql_worker_private_ips" {
   value = aws_instance.mysql_worker[*].private_ip
 }
+
+output "gatekeeper_api_key" {
+  value = random_password.api_key.result
+}

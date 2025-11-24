@@ -4,13 +4,13 @@ import random
 from flask import Flask, request, jsonify
 import mysql.connector
 import os
-from config import MANAGER_IP, WORKER_IPS, MYSQL_PASSWORD
+from constants import MANAGER_IP, WORKER_IPS, MYSQL_PASSWORD
 import traceback
 
 app = Flask(__name__)
-handler = logging.FileHandler("proxy.log")  # Create the file logger
-app.logger.addHandler(handler)             # Add it to the built-in logger
-app.logger.setLevel(logging.DEBUG)         # Set the log level to debug
+handler = logging.FileHandler("proxy.log")  
+app.logger.addHandler(handler)
+app.logger.setLevel(logging.DEBUG)
 
 LATENCY_THRESHOLD = 0.03   # 30ms threshold, we do chose a random worker below this latency and the lowest ping worker if above
 
@@ -47,7 +47,6 @@ def measure_latency(host):
         latency = time.time() - start
         return latency
     except Exception:
-        app.logger.info(f"[LATENCY] {host} measurement failed, returning high latency")
         return 9999
 
 def is_cluster_under_load(latencies):
@@ -69,7 +68,6 @@ def select_worker():
 
 def is_read_query(sql):
     is_read = sql.strip().lower().startswith("select")
-    app.logger.info(f"[QUERY] is_read_query: {is_read} for sql: {sql[:80]!r}")
     return is_read
 
 @app.route("/query", methods=["POST"])
@@ -82,7 +80,6 @@ def handle_query():
 
     try:
         # We select to which MySql Instance to forward the query
-        app.logger.info(f"[REQUEST] Received SQL: {sql[:200]!r}")
         if is_read_query(sql):
             host = select_worker()
         else:
@@ -95,7 +92,7 @@ def handle_query():
         cursor.execute(sql)
 
         if is_read_query(sql):
-            return jsonify({"data": cursor.fetchall(), "host": instance_names.get(host)})
+            return jsonify({"data": cursor.fetchall(),"status": "success", "host": instance_names.get(host)})
 
         return jsonify({"status": "success", "host": instance_names.get(host)})
 

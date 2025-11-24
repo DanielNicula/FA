@@ -9,8 +9,9 @@ pip3 install flask requests
 mkdir -p /opt/gatekeeper
 
 # Create config.env for variables
-cat > /opt/gatekeeper/config.env <<EOF
+cat > /opt/gatekeeper/constants.py <<EOF
 PROXY_IP=${proxy_ip}
+API_KEY="${api_key}"
 EOF
     
 wget https://raw.githubusercontent.com/DanielNicula/FinalProject/main/gatekeeper/gatekeeper.py -O /opt/gatekeeper/gatekeeper.py
