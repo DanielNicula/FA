@@ -14,7 +14,6 @@ prompt_aws_creds() {
   read -rp "AWS_ACCESS_KEY_ID: " AWS_ACCESS_KEY_ID
   read -rsp "AWS_SECRET_ACCESS_KEY: " AWS_SECRET_ACCESS_KEY && echo
   read -rp "AWS_SESSION_TOKEN: " AWS_SESSION_TOKEN
-  export AWS_DEFAULT_REGION=us-east-1
 
   echo "Validating AWS credentials..."
   if aws sts get-caller-identity >/dev/null 2>&1; then
@@ -27,7 +26,6 @@ prompt_aws_creds() {
 
 
 deploy() {
-  # local registry=$1
   echo "Running Terraform..."
   (
     cd infra
@@ -43,35 +41,42 @@ get_gatekeeper_host() {
   )
 }
 
+get_gatekeeper_api_key() {
+  (
+    cd infra
+    terraform output -raw gatekeeper_api_key
+  )
+}
+
 benchmark() {
   local host=$1
-  local count=$2
-  local concurrency=$3
+  local api-key=$2
 
   echo "Benchmarking..."
   (
     cd benchmark
-    mkdir -p results
-    go run cmd/main.go -url "http://$host:80/new_request" -n $count -c $concurrency > "results/benchmark.txt" 2>&1
+    python3 main.py --host "$host" --api-key "$api-key"
   )
 }
 
 # Main script
 prompt_aws_creds
 deploy
+
+echo "Waiting 3 minutes for services to stabilize..."
+sleep 180
+
 GATEKEEPER_HOST=$(get_gatekeeper_host)
+GATEKEEPER_API_KEY=$(get_gatekeeper_api_key)
+benchmark "$GATEKEEPER_HOST" "$GATEKEEPER_API_KEY"
 
-# echo "Waiting 3 minutes for services to stabilize..."
-# sleep 180
+echo "Benchmarking complete!"
 
-# benchmark "$GATEKEEPER_HOST" 1000 16 #benchmarking a revoir
+echo "Cleaning up resources..."
+(
+    cd cleanup
+    pip3 install --break-system-packages -r requirements.txt
+    python main.py
+)
+echo "Clean up complete!"
 
-# echo "Benchmarking complete!"
-
-# echo "Cleaning up resources..."
-# (
-#     cd cleanup
-#     pip3 install --break-system-packages -r requirements.txt
-#     python main.py
-# )
-# echo "Clean up complete!"

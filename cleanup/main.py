@@ -33,7 +33,7 @@ def terminate_ec2_instances():
 def terminate_security_groups():
     print("Starting process to delete security groups...")
     try:
-        sg_names_in_order = ["worker-sg", "orchestrator-sg"]
+        sg_names_in_order = ["mysql-manager-sg", "mysql-worker-sg", "proxy-sg", "gatekeeper-sg"]
         
         response = EC2_CLIENT.describe_security_groups()
         

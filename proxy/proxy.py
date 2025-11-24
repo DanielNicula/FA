@@ -19,7 +19,7 @@ instance_names = {
     WORKER_IPS[0]: "worker1",
     WORKER_IPS[1]: "worker2",
 }
-
+forwarding_strategy = ""
 
 def connect(host):
     try:
@@ -58,11 +58,13 @@ def select_worker():
     under_load = is_cluster_under_load(latencies)
     if not under_load:
         # Random Forwarding
+        forwarding_strategy = "random"
         choice = random.choice(WORKER_IPS)
 
         return choice
 
     # Customized Forwarding
+    forwarding_strategy = "customized"
     best = min(latencies, key=latencies.get)
     return best
 
@@ -84,6 +86,7 @@ def handle_query():
             host = select_worker()
         else:
             # Direct Hit
+            forwarding_strategy = "direct hit"
             host = MANAGER_IP
         app.logger.info(f"[REQUEST] Forwarding to host: {host}")
 
@@ -91,10 +94,15 @@ def handle_query():
         cursor = db.cursor(dictionary=True)
         cursor.execute(sql)
 
-        if is_read_query(sql):
-            return jsonify({"data": cursor.fetchall(),"status": "success", "host": instance_names.get(host)})
+        host_label = instance_names.get(host)
+        strategy = forwarding_strategy or "unknown"
+        host_label = f"{host_label} with {strategy} forwarding"
 
-        return jsonify({"status": "success", "host": instance_names.get(host)})
+        if is_read_query(sql):
+            
+            return jsonify({"data": cursor.fetchall(), "status": "success", "host": host_label})
+
+        return jsonify({"status": "success", "host": host_label})
 
     except Exception as e:
         app.logger.info(f"[ERROR] Exception while handling query: {e}")

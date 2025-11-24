@@ -9,7 +9,7 @@ pip3 install flask mysql-connector-python
 
 mkdir -p /opt/proxy
 
-# Create config.py for constants
+# Create constants.py for variables
 cat > /opt/proxy/constants.py <<EOF
 MANAGER_IP = "${manager_ip}"
 WORKER_IPS = [${join(", ", [for ip in worker_ips : "\"${ip}\""])}]
