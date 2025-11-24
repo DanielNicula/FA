@@ -19,7 +19,7 @@ instance_names = {
     WORKER_IPS[0]: "worker1",
     WORKER_IPS[1]: "worker2",
 }
-forwarding_strategy = ""
+forwarding_strategy = "unknown"
 
 def connect(host):
     try:
