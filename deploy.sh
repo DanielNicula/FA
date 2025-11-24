@@ -3,17 +3,16 @@ set -euo pipefail
 
 # Functions
 prompt_aws_creds() {
-  echo "Validating AWS credentials..."
-  if aws sts get-caller-identity >/dev/null 2>&1; then
-    echo "AWS credentials are valid."
-    return
-  fi
-
   echo "Please enter your AWS credentials:"
 
   read -rp "AWS_ACCESS_KEY_ID: " AWS_ACCESS_KEY_ID
   read -rsp "AWS_SECRET_ACCESS_KEY: " AWS_SECRET_ACCESS_KEY && echo
   read -rp "AWS_SESSION_TOKEN: " AWS_SESSION_TOKEN
+
+  export AWS_ACCESS_KEY_ID
+  export AWS_SECRET_ACCESS_KEY
+  export AWS_SESSION_TOKEN
+  export AWS_DEFAULT_REGION=us-east-1
 
   echo "Validating AWS credentials..."
   if aws sts get-caller-identity >/dev/null 2>&1; then
@@ -50,12 +49,18 @@ get_gatekeeper_api_key() {
 
 benchmark() {
   local host=$1
-  local api-key=$2
+  local api_key=$2
+
+  echo "Generating constants.py..."
+  cat > benchmark/constants.py <<EOF
+GATEKEEPER_IP = "$host"
+API_KEY = "$api_key"
+EOF
 
   echo "Benchmarking..."
   (
     cd benchmark
-    python3 main.py --host "$host" --api-key "$api-key"
+    python benchmark.py
   )
 }
 

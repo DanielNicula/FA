@@ -100,9 +100,9 @@ def handle_query():
 
         if is_read_query(sql):
             
-            return jsonify({"data": cursor.fetchall(), "status": "success", "host": host_label})
+            return jsonify({"data": cursor.fetchall(), "status": "success", "host": host})
 
-        return jsonify({"status": "success", "host": host_label})
+        return jsonify({"status": "success", "host": host})
 
     except Exception as e:
         app.logger.info(f"[ERROR] Exception while handling query: {e}")

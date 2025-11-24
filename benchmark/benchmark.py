@@ -4,11 +4,10 @@ import time
 import random
 import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import os
+from constants import GATEKEEPER_IP, API_KEY
 
 
-GATEKEEPER_URL = f"http://{os.environ.get('GATEKEEPER_IP', '127.0.0.1')}/API"
-API_KEY = os.environ.get('API_KEY', 'default_api_key')
+GATEKEEPER_URL = f"http://{GATEKEEPER_IP}/API"
 OUTPUT_FILE = "benchmark_results.txt"
 
 HEADERS = {
