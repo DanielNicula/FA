@@ -145,7 +145,7 @@ resource "aws_security_group" "gatekeeper_sg" {
 }
 
 #API Key for gatekeeper
-ressource "random_password" "api_key" {
+resource "random_password" "api_key" {
   length  = 40
   special = false
 }

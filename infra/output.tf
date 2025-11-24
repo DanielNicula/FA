@@ -16,4 +16,5 @@ output "mysql_worker_private_ips" {
 
 output "gatekeeper_api_key" {
   value = random_password.api_key.result
+  sensitive = true
 }
