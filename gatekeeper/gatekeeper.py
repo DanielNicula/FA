@@ -5,7 +5,7 @@ from flask import Flask, request, jsonify
 import os
 from constants import PROXY_IP, API_KEY
 
-PROXY_URL = f"http://{PROXY_IP}/"
+PROXY_URL = f"http://{PROXY_IP}/query"
 
 app = Flask(__name__)
 handler = logging.FileHandler("gatekeeper.log")  
