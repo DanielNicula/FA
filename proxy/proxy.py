@@ -14,6 +14,13 @@ app.logger.setLevel(logging.DEBUG)         # Set the log level to debug
 
 LATENCY_THRESHOLD = 0.03   # 30ms threshold, we do chose a random worker below this latency and the lowest ping worker if above
 
+instance_names = {
+    MANAGER_IP: "manager",
+    WORKER_IPS[0]: "worker1",
+    WORKER_IPS[1]: "worker2",
+}
+
+
 def connect(host):
     try:
         conn = mysql.connector.connect(
@@ -88,9 +95,9 @@ def handle_query():
         cursor.execute(sql)
 
         if is_read_query(sql):
-            return jsonify(cursor.fetchall())
+            return jsonify({"data": cursor.fetchall(), "host": instance_names.get(host)})
 
-        return jsonify({"status": "success", "host": host})
+        return jsonify({"status": "success", "host": instance_names.get(host)})
 
     except Exception as e:
         app.logger.info(f"[ERROR] Exception while handling query: {e}")
