@@ -19,7 +19,7 @@ instance_names = {
     WORKER_IPS[0]: "worker1",
     WORKER_IPS[1]: "worker2",
 }
-
+forwarding_strategy = "unknown"
 
 def connect(host):
     try:
@@ -47,7 +47,6 @@ def measure_latency(host):
         latency = time.time() - start
         return latency
     except Exception:
-        app.logger.info(f"[LATENCY] {host} measurement failed, returning high latency")
         return 9999
 
 def is_cluster_under_load(latencies):
@@ -59,17 +58,18 @@ def select_worker():
     under_load = is_cluster_under_load(latencies)
     if not under_load:
         # Random Forwarding
+        forwarding_strategy = "random"
         choice = random.choice(WORKER_IPS)
 
         return choice
 
     # Customized Forwarding
+    forwarding_strategy = "customized"
     best = min(latencies, key=latencies.get)
     return best
 
 def is_read_query(sql):
     is_read = sql.strip().lower().startswith("select")
-    app.logger.info(f"[QUERY] is_read_query: {is_read} for sql: {sql[:80]!r}")
     return is_read
 
 @app.route("/query", methods=["POST"])
@@ -82,11 +82,11 @@ def handle_query():
 
     try:
         # We select to which MySql Instance to forward the query
-        app.logger.info(f"[REQUEST] Received SQL: {sql[:200]!r}")
         if is_read_query(sql):
             host = select_worker()
         else:
             # Direct Hit
+            forwarding_strategy = "direct hit"
             host = MANAGER_IP
         app.logger.info(f"[REQUEST] Forwarding to host: {host}")
 
@@ -94,10 +94,15 @@ def handle_query():
         cursor = db.cursor(dictionary=True)
         cursor.execute(sql)
 
-        if is_read_query(sql):
-            return jsonify({"data": cursor.fetchall(),"status": "success", "host": instance_names.get(host)})
+        host_label = instance_names.get(host)
+        strategy = forwarding_strategy or "unknown"
+        host_label = f"{host_label} with {strategy} forwarding"
 
-        return jsonify({"status": "success", "host": instance_names.get(host)})
+        if is_read_query(sql):
+            
+            return jsonify({"data": cursor.fetchall(), "status": "success", "host": host})
+
+        return jsonify({"status": "success", "host": host})
 
     except Exception as e:
         app.logger.info(f"[ERROR] Exception while handling query: {e}")
