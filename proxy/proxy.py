@@ -12,7 +12,7 @@ handler = logging.FileHandler("proxy.log")
 app.logger.addHandler(handler)
 app.logger.setLevel(logging.DEBUG)
 
-LATENCY_THRESHOLD = 0.03
+LATENCY_THRESHOLD = 0.1
 
 instance_names = {
     MANAGER_IP: "manager",
