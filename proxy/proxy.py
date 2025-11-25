@@ -8,11 +8,11 @@ from constants import MANAGER_IP, WORKER_IPS, MYSQL_PASSWORD
 import traceback
 
 app = Flask(__name__)
-handler = logging.FileHandler("proxy.log")  
+handler = logging.FileHandler("proxy.log")
 app.logger.addHandler(handler)
 app.logger.setLevel(logging.DEBUG)
 
-LATENCY_THRESHOLD = 0.03   # 30ms threshold, we do chose a random worker below this latency and the lowest ping worker if above
+LATENCY_THRESHOLD = 0.03
 
 instance_names = {
     MANAGER_IP: "manager",
@@ -43,8 +43,7 @@ def measure_latency(host):
         cursor.execute("SELECT 1;")
         cursor.fetchone()
         db.close()
-        latency = time.time() - start
-        return latency
+        return time.time() - start
     except Exception:
         return 9999
 
@@ -54,52 +53,65 @@ def is_cluster_under_load(latencies):
 
 def select_worker():
     latencies = {ip: measure_latency(ip) for ip in WORKER_IPS}
-    under_load = is_cluster_under_load(latencies)
-    if not under_load:
-        # Random Forwarding
-        choice = random.choice(WORKER_IPS)
 
-        return choice
+    if not is_cluster_under_load(latencies):
+        # Random Forwarding (under low load)
+        chosen = random.choice(WORKER_IPS)
+        return chosen, "random forwarding"
 
-    # Customized Forwarding
+    # Customized Forwarding (under high load)
     best = min(latencies, key=latencies.get)
-    return best
+    return best, "customized forwarding"
 
 def is_read_query(sql):
-    is_read = sql.strip().lower().startswith("select")
-    return is_read
+    return sql.strip().lower().startswith("select")
 
 @app.route("/query", methods=["POST"])
 def handle_query():
     app.logger.info("[REQUEST] Received /query request")
     data = request.get_json()
+
     if not data or "sql" not in data:
         return jsonify({"error": "Missing 'sql' field"}), 400
+
     sql = data["sql"]
 
     try:
         # We select to which MySql Instance to forward the query
         if is_read_query(sql):
-            host = select_worker()
+            host, strategy = select_worker()
+
         else:
-            # Direct Hit
             host = MANAGER_IP
-        app.logger.info(f"[REQUEST] Forwarding to host: {host}")
+            strategy = "direct hit forwarding"
+
+        app.logger.info(f"[REQUEST] Forwarding to host: {host} using {strategy}")
 
         db = connect(host)
         cursor = db.cursor(dictionary=True)
         cursor.execute(sql)
 
-        if is_read_query(sql):       
-            return jsonify({"data": cursor.fetchall(), "status": "success", "host": instance_names.get(host)})
+        if is_read_query(sql):
+            return jsonify({
+                "data": cursor.fetchall(),
+                "status": "success",
+                "host": instance_names.get(host),
+                "strategy": strategy
+            })
 
-        return jsonify({"status": "success", "host": instance_names.get(host)})
+        # Writes
+        return jsonify({
+            "status": "success",
+            "host": instance_names.get(host),
+            "strategy": strategy
+        })
 
     except Exception as e:
         app.logger.info(f"[ERROR] Exception while handling query: {e}")
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
-    
+
+
 if __name__ == "__main__":
     print(f"[STARTUP] MANAGER_IP={MANAGER_IP}, WORKER_IPS={WORKER_IPS}")
     print("[STARTUP] Starting Flask app on 0.0.0.0:80")
